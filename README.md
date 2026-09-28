@@ -309,4 +309,4 @@ c09aef7 Implement concurrent request handling and graceful shutdown
 
 ## Video de demostración
 
-*(enlace al video)*: muestra el `docker build` y la ejecución local, peticiones concurrentes a `/slow`, `docker stop` con drenado, y la aplicación respondiendo en la URL pública de EC2.
+muestra el `docker build` y la ejecución local, peticiones concurrentes a `/slow`, `docker stop` con drenado, y la aplicación respondiendo en la URL pública de EC2.
