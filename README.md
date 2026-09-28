@@ -10,7 +10,7 @@ En esta entrega el servidor pasa de atender **una petición a la vez** a atender
 |---|---|
 | URL pública (EC2) | http://ec2-98-92-41-152.compute-1.amazonaws.com:8081/ |
 | Endpoint de ejemplo | http://ec2-98-92-41-152.compute-1.amazonaws.com:8081/greeting?name=AWS |
-| Commit de la extensión | [`5837ceb` — Implement concurrent request handling and graceful shutdown](https://github.com/0x0000cbsx/Containerizing-and-Deploying-a-Java-Web-Application---Framework-extension/commit/5837ceb) |
+| Commit de la extensión | [`c09aef7` — Implement concurrent request handling and graceful shutdown](https://github.com/0x0000cbsx/Containerizing-and-Deploying-a-Java-Web-Application---Framework-extension/commit/c09aef7) |
 | Commit base (framework previo) | [`987f201` — Import baseline web framework from previous assignment](https://github.com/0x0000cbsx/Containerizing-and-Deploying-a-Java-Web-Application---Framework-extension/commit/987f201) |
 | Video de demostración | *(enlace al video)* |
 
@@ -46,7 +46,7 @@ Limitaciones conocidas: solo `GET`, sin *keep-alive* (`Connection: close`), sin 
 
 ## Cambios introducidos en la extensión
 
-Todo el cambio está en el commit [`5837ceb`](https://github.com/0x0000cbsx/Containerizing-and-Deploying-a-Java-Web-Application---Framework-extension/commit/5837ceb). El commit anterior, `987f201`, es el framework base sin modificaciones, así que `git diff 987f201 5837ceb` muestra exactamente la extensión.
+Todo el cambio está en el commit [`c09aef7`](https://github.com/0x0000cbsx/Containerizing-and-Deploying-a-Java-Web-Application---Framework-extension/commit/c09aef7). El commit anterior, `987f201`, es el framework base sin modificaciones, así que `git diff 987f201 c09aef7` muestra exactamente la extensión.
 
 ### 1. Atención concurrente
 
@@ -302,7 +302,8 @@ Hello, AWS!
 ### Historial de commits
 
 ```
-5837ceb Implement concurrent request handling and graceful shutdown
+5005269 Add Docker and EC2 deployment scripts, evidence and README
+c09aef7 Implement concurrent request handling and graceful shutdown
 987f201 Import baseline web framework from previous assignment
 ```
 
