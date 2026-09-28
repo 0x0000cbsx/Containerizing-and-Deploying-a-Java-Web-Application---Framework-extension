@@ -1,0 +1,61 @@
+$ grep PRETTY_NAME /etc/os-release
+PRETTY_NAME="Amazon Linux 2023.12.20260918"
+
+$ docker --version
+Docker version 25.0.14, build 0bab007
+
+$ docker images 0x0cbsx/framework-extension
+REPOSITORY                    TAG       IMAGE ID       CREATED         SIZE
+0x0cbsx/framework-extension   1.0       1ab9d0813d40   2 minutes ago   325MB
+
+$ docker run -d --name framework --restart unless-stopped -e PORT=8080 -e APP_ENV=production -e "GREETING_PREFIX=Hello from EC2" -p 8081:8080 0x0cbsx/framework-extension:1.0
+7f94bfe0560217c227d2bb1d57b34f48934678532c4151d046f3afae6c90ef35
+
+$ docker ps
+CONTAINER ID   IMAGE                             COMMAND               CREATED          STATUS          PORTS                                       NAMES
+7f94bfe05602   0x0cbsx/framework-extension:1.0   "java -jar app.jar"   4 seconds ago    Up 3 seconds    0.0.0.0:8081->8080/tcp, :::8081->8080/tcp   framework
+1037154c0b87   0x0cbsx/virtualization-lab:1.0    "java -jar app.jar"   19 minutes ago   Up 19 minutes   0.0.0.0:8080->6000/tcp, :::8080->6000/tcp   virtualization-lab
+
+$ curl -s http://localhost:8081/greeting?name=AWS
+Hello, AWS!
+$ curl -s http://localhost:8081/hello?name=AWS
+Hello from EC2 AWS
+$ curl -s http://localhost:8081/config
+{"appEnv":"production","greetingPrefix":"Hello from EC2"}
+########## Concurrency on EC2: 5 x 2 s requests in parallel ##########
+Slow request finished after 2000 ms on http-worker-7
+Slow request finished after 2002 ms on http-worker-8
+Slow request finished after 2000 ms on http-worker-6
+Slow request finished after 2000 ms on http-worker-4
+Slow request finished after 2000 ms on http-worker-5
+total: 2036 ms (sequential would be ~10000 ms)
+
+########## Graceful shutdown on EC2: docker stop with a 4 s request in flight ##########
+Slow request finished after 4000 ms on http-worker-9  <- in-flight request completed (HTTP 200)
+docker stop took 3277 ms
+$ docker logs --tail 5 framework
+[http-worker-5] GET /slow -> 200
+Shutdown signal received, stopping server...
+Shutting down: waiting up to 8s for 1 in-flight request(s)
+[http-worker-9] GET /slow -> 200
+Server stopped gracefully.
+
+########## Start the service again ##########
+$ docker ps
+CONTAINER ID   IMAGE                             COMMAND               CREATED          STATUS          PORTS                                       NAMES
+ef1d68bdcc48   0x0cbsx/framework-extension:1.0   "java -jar app.jar"   4 seconds ago    Up 3 seconds    0.0.0.0:8081->8080/tcp, :::8081->8080/tcp   framework
+1037154c0b87   0x0cbsx/virtualization-lab:1.0    "java -jar app.jar"   19 minutes ago   Up 19 minutes   0.0.0.0:8080->6000/tcp, :::8080->6000/tcp   virtualization-lab
+
+$ curl -s http://localhost:8081/greeting?name=AWS
+Hello, AWS!
+Public URL: http://ec2-98-92-41-152.compute-1.amazonaws.com:8081/greeting?name=AWS
+
+########## External check (operator machine, outside AWS) ##########
+$ curl "http://ec2-98-92-41-152.compute-1.amazonaws.com:8081/greeting?name=AWS"
+Hello, AWS!
+$ curl "http://ec2-98-92-41-152.compute-1.amazonaws.com:8081/pi"
+3.141592653589793
+$ curl "http://ec2-98-92-41-152.compute-1.amazonaws.com:8081/config"
+{"appEnv":"production","greetingPrefix":"Hello from EC2"}
+$ 5 parallel requests to http://ec2-98-92-41-152.compute-1.amazonaws.com:8081/slow?ms=2000 from outside AWS
+total: 2184 ms

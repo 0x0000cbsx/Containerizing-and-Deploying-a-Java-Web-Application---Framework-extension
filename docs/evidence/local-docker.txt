@@ -1,0 +1,92 @@
+
+########## 1. Build image (multi-stage: Maven + Corretto 21) ##########
+
+$ docker build -t 0x0cbsx/framework-extension:1.0 .
+sha256:846352d63acc03264005e5611606a7014958d98b308e225b16b5187e16e663a3
+
+$ docker images 0x0cbsx/framework-extension
+IMAGE                             ID             DISK USAGE   CONTENT SIZE   EXTRA
+0x0cbsx/framework-extension:1.0   846352d63acc        494MB          166MB        
+
+
+########## 2. Run container, port taken from PORT ##########
+
+$ docker run -d --name fw-1 -e PORT=8080 -e GREETING_PREFIX=Hola -p 35000:8080 0x0cbsx/framework-extension:1.0
+e5f1fbb9e77ff2278ade8f9732d175df686ea386899503eacf96482648266872
+
+$ docker ps --filter name=fw-
+CONTAINER ID   IMAGE                             COMMAND               CREATED         STATUS         PORTS                                           NAMES
+e5f1fbb9e77f   0x0cbsx/framework-extension:1.0   "java -jar app.jar"   3 seconds ago   Up 3 seconds   0.0.0.0:35000->8080/tcp, [::]:35000->8080/tcp   fw-1
+
+$ curl -s http://localhost:35000/greeting?name=Docker
+Hello, Docker!
+$ curl -s http://localhost:35000/hello?name=Docker
+Hola Docker
+$ curl -s http://localhost:35000/config
+{"appEnv":"production","greetingPrefix":"Hola"}
+$ curl -s -o /dev/null -w %{http_code} %{content_type}\n http://localhost:35000/
+200 text/html; charset=utf-8
+
+
+########## 3. Same image, different PORT inside the container ##########
+
+$ docker run -d --name fw-2 -e PORT=9090 -p 35001:9090 0x0cbsx/framework-extension:1.0
+95ef2d492ea994a4e9a018fe8a1e10b1dab370eedf2beae469e71585371d7f2f
+
+$ curl -s http://localhost:35001/greeting?name=Port9090
+Hello, Port9090!
+$ docker logs fw-2
+APP_ENV=production, GREETING_PREFIX=Hello
+Server listening on port 9090 with 16 worker threads
+[http-worker-1] GET /greeting -> 200
+
+
+########## 4. Concurrency: 5 requests of 2 s each, in parallel ##########
+
+$ time (for i in 1 2 3 4 5; do curl -s "http://localhost:35000/slow?ms=2000" & done; wait)
+Slow request finished after 2000 ms on http-worker-6
+Slow request finished after 2001 ms on http-worker-7
+Slow request finished after 2001 ms on http-worker-8
+Slow request finished after 2000 ms on http-worker-9
+Slow request finished after 2001 ms on http-worker-5
+total: 2.026568045 s  (sequential would be ~10 s)
+
+$ curl -s "/slow?ms=3000" &  then  curl -s "/greeting"   # fast request is not blocked
+fast /greeting answered in 0.002565 s while /slow was running
+
+$ docker logs --tail 12 fw-1
+Server listening on port 8080 with 16 worker threads
+[http-worker-1] GET /greeting -> 200
+[http-worker-2] GET /hello -> 200
+[http-worker-3] GET /config -> 200
+[http-worker-4] GET / -> 200
+[http-worker-5] GET /slow -> 200
+[http-worker-7] GET /slow -> 200
+[http-worker-9] GET /slow -> 200
+[http-worker-6] GET /slow -> 200
+[http-worker-8] GET /slow -> 200
+[http-worker-11] GET /greeting -> 200
+[http-worker-10] GET /slow -> 200
+
+
+########## 5. Graceful shutdown: docker stop while a 4 s request is in flight ##########
+
+$ curl "/slow?ms=4000" &  sleep 1;  time docker stop fw-1
+Slow request finished after 4000 ms on http-worker-12  <- in-flight request completed (HTTP 200)
+fw-1
+docker stop took 3.134907552 s
+
+$ curl "/greeting"   # after stop: connection refused
+curl exit code 7 (connection refused)
+
+$ docker inspect -f exit code: {{.State.ExitCode}} fw-1
+exit code: 143
+
+$ docker logs --tail 6 fw-1
+[http-worker-11] GET /greeting -> 200
+[http-worker-10] GET /slow -> 200
+Shutdown signal received, stopping server...
+Shutting down: waiting up to 8s for 1 in-flight request(s)
+[http-worker-12] GET /slow -> 200
+Server stopped gracefully.
+
