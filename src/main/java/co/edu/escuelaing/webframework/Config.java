@@ -1,5 +1,6 @@
 package co.edu.escuelaing.webframework;
 
+import java.time.Duration;
 import java.util.Map;
 
 public final class Config {
@@ -33,6 +34,31 @@ public final class Config {
             return port;
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid PORT value: '" + value + "' (expected 0-65535)", e);
+        }
+    }
+
+    public int workerThreads() {
+        return positiveInt("WORKER_THREADS", HttpServer.DEFAULT_WORKER_THREADS);
+    }
+
+    public Duration shutdownTimeout() {
+        return Duration.ofSeconds(positiveInt("SHUTDOWN_TIMEOUT_SECONDS",
+                (int) HttpServer.DEFAULT_SHUTDOWN_TIMEOUT.toSeconds()));
+    }
+
+    private int positiveInt(String name, int defaultValue) {
+        String value = get(name, null);
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            int parsed = Integer.parseInt(value);
+            if (parsed < 1) {
+                throw new NumberFormatException("must be >= 1");
+            }
+            return parsed;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid " + name + " value: '" + value + "' (expected an integer >= 1)", e);
         }
     }
 

@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -170,5 +171,24 @@ class WebFrameworkTest {
         assertEquals("Hello", config.get("GREETING_PREFIX", "Hello"));
         assertEquals("x", config.get("MISSING", "x"));
         assertNull(config.staticFilesPath());
+    }
+
+    @Test
+    void workerThreadsAndShutdownTimeoutComeFromEnvironment() {
+        Config defaults = new Config(Map.of());
+        assertEquals(HttpServer.DEFAULT_WORKER_THREADS, defaults.workerThreads());
+        assertEquals(HttpServer.DEFAULT_SHUTDOWN_TIMEOUT, defaults.shutdownTimeout());
+
+        Config custom = new Config(Map.of("WORKER_THREADS", "4", "SHUTDOWN_TIMEOUT_SECONDS", "20"));
+        assertEquals(4, custom.workerThreads());
+        assertEquals(Duration.ofSeconds(20), custom.shutdownTimeout());
+    }
+
+    @Test
+    void invalidWorkerThreadsOrTimeoutFailFast() {
+        assertThrows(IllegalArgumentException.class, () -> new Config(Map.of("WORKER_THREADS", "0")).workerThreads());
+        assertThrows(IllegalArgumentException.class, () -> new Config(Map.of("WORKER_THREADS", "many")).workerThreads());
+        assertThrows(IllegalArgumentException.class,
+                () -> new Config(Map.of("SHUTDOWN_TIMEOUT_SECONDS", "-5")).shutdownTimeout());
     }
 }

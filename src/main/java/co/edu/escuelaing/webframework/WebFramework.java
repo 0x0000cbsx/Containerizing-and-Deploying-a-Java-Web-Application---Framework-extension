@@ -37,8 +37,22 @@ public final class WebFramework {
     }
 
     public static void start(int port) throws IOException {
-        HttpServer httpServer = new HttpServer(ROUTER, buildStaticFileService(Config.fromEnv()));
+        Config config = Config.fromEnv();
+        HttpServer httpServer = new HttpServer(ROUTER, buildStaticFileService(config),
+                config.workerThreads(), config.shutdownTimeout());
         server = httpServer;
+        // SIGTERM/SIGINT (docker stop, Ctrl+C) -> drain in-flight requests before the JVM exits
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (httpServer.isRunning()) {
+                System.out.println("Shutdown signal received, stopping server...");
+            }
+            httpServer.stop();
+            try {
+                httpServer.awaitStopped();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "shutdown-hook"));
         httpServer.start(port);
     }
 

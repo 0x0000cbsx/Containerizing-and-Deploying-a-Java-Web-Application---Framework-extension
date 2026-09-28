@@ -19,8 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * End-to-end tests over real TCP sockets. The server runs on one background thread only so the
- * test can act as a client; the server itself still handles one connection at a time.
+ * End-to-end tests over real TCP sockets. The server runs on a background thread so the test can
+ * act as a client; concurrency and shutdown are covered in {@link ConcurrencyAndShutdownTest}.
  */
 class HttpServerIntegrationTest {
     private HttpServer server;

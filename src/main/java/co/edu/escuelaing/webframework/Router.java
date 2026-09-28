@@ -1,11 +1,12 @@
 package co.edu.escuelaing.webframework;
 
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Router {
-    private final Map<String, Route> routes = new HashMap<>();
+    // read by every worker thread concurrently
+    private final Map<String, Route> routes = new ConcurrentHashMap<>();
 
     public void addRoute(String method, String path, Route route) {
         if (path == null || !path.startsWith("/")) {
