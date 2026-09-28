@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintainable Application Server</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <main class="container">
+        <img src="/images/logo.png" alt="Application server logo" class="logo">
+        <h1>Maintainable Application Server</h1>
+        <p>A tiny Java web framework: static files plus lambda-based GET services.</p>
+
+        <section>
+            <h2>/hello</h2>
+            <div class="input-group">
+                <input id="name" type="text" placeholder="Type a name" value="Pedro">
+                <button onclick="greet()">Greet</button>
+            </div>
+            <div id="result" class="result">Waiting for response...</div>
+        </section>
+
+        <section>
+            <h2>/pi</h2>
+            <button onclick="loadPi()">Get PI</button>
+            <div id="pi-result" class="result">Waiting for response...</div>
+        </section>
+
+        <section>
+            <h2>/config</h2>
+            <button onclick="loadConfig()">Show configuration</button>
+            <div id="config-result" class="result">Waiting for response...</div>
+        </section>
+    </main>
+
+    <script src="/app.js"></script>
+</body>
+</html>
